@@ -316,7 +316,7 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
   <label class="switch" style="margin:14px 0"><input type="checkbox" id="setCarry"> Move unfinished tasks to today automatically</label>
   <section class="block">
     <h2>Fixed daily blocks</h2>
-    <p class="hint">Your day, written for a 07:00 wake. Set your real wake time on Today (e.g. 23:00) and every block moves with it. Change any time, and use the S M T W T F S buttons to choose which days a block appears (gym is off on Sun and Wed).</p>
+    <p class="hint">Your night day in real clock times: wake 23:00, gym 06:30, sleep 16:00 (times from 00:00 to 16:59 are after midnight). If you wake at another time, set it on Today and every block moves with it. Change any time, and use the S M T W T F S buttons to choose which days a block appears (gym is off on Sun and Wed).</p>
     <div id="anchorEditor"></div>
     <div class="row" style="margin-top:10px">
       <input id="newAnchor" placeholder="e.g. Namaz, commute, family time" style="flex:1 1 200px" aria-label="New fixed block">
@@ -856,7 +856,7 @@ const SPRINT2_TEMPLATE = `## Design 1 · problem + constraints | Clinic Scribe, 
 
 
 const SPRINT4_NAME = "Clinic Scribe · finish the build";
-const SPRINT4_START = "2026-11-03";
+const SPRINT4_START = "2026-11-02";
 const SPRINT4_TEMPLATE = `## Day 1 · sound → measured transcript | Clinic Scribe, Audio, Speech
 - Must: Foundation (layout reviewed, venv, config, logging, tests, .gitignore) + audio in + VAD segments + Whisper worker with RTF and RAM measured
 
@@ -888,38 +888,43 @@ const SPRINT4_TEMPLATE = `## Day 1 · sound → measured transcript | Clinic Scr
 - Must: Fix the doctor's feedback, then switch to outreach mode in Settings`;
 
 const DEFAULT_HABITS = [
-  {id:"hp", text:"Posts: schedule today's learning post and Day N post in LinkedIn (30 min cap)", slot:"morning", start:"07:30", end:"08:00"},
-  {id:"hs", text:"Shutdown: tick today, write tomorrow's first task, update the outreach tracker", slot:"evening", start:"23:30", end:"23:45"}
+  {id:"hp", text:"Posts: schedule today's learning post and Day N post in LinkedIn (30 min cap)", slot:"morning", start:"23:15", end:"23:45"},
+  {id:"hs", text:"Shutdown: tick today, write tomorrow's first task, update the outreach tracker", slot:"evening", start:"15:40", end:"15:55"}
 ];
-// fixed blocks, written for a 07:00 wake. Set your real wake time on Today (e.g. 23:00) and the whole day moves with it.
-// days = calendar weekdays the block is on (0 Sun … 6 Sat); no days = every day
+// Night day: wake 23:00, sleep 16:00. Times are real clock times; anything from 00:00 to 16:59 is after midnight.
+// If you wake at another time, set it on Today and every block moves with it.
+// days = calendar weekdays the block falls on (0 Sun … 6 Sat); no days = every day
 const GYM_DAYS=[1,2,4,5,6], REST_DAYS=[0,3];
 const DEFAULT_ANCHORS = [
-  {id:"w0", text:"Wake up · water · plan the day", start:"07:00", end:"07:30", icon:"sun"},
-  {id:"p1", text:"Project block 1 — today's Must, hardest part first, phone away", start:"08:00", end:"10:30", icon:"work"},
-  {id:"b1", text:"Break", start:"10:30", end:"10:45", icon:"break"},
-  {id:"p2", text:"Project block 2 — continue the Must, send work to Claude for review", start:"10:45", end:"13:15", icon:"work"},
-  {id:"m1", text:"Meal + rest", start:"13:15", end:"14:00", icon:"meal"},
-  {id:"c1", text:"Coding 1 — basics / OOP book: concepts + examples", start:"14:00", end:"15:30", icon:"code"},
-  {id:"b2", text:"Break", start:"15:30", end:"15:40", icon:"break"},
-  {id:"c2", text:"Coding 2 — practice + timed test, send for marking", start:"15:40", end:"17:10", icon:"code"},
-  {id:"b3", text:"Break", start:"17:10", end:"17:30", icon:"break"},
-  {id:"l1", text:"ML 1 — today's concept: learn it", start:"17:30", end:"19:00", icon:"brain"},
-  {id:"b4", text:"Break", start:"19:00", end:"19:10", icon:"break"},
-  {id:"l2", text:"ML 2 — closed-book test, then revise an old concept", start:"19:10", end:"20:40", icon:"brain"},
-  {id:"g1", text:"Gym", start:"20:40", end:"22:40", icon:"gym", days:GYM_DAYS},
-  {id:"o1", text:"No gym today — outreach and applications (extra 2 h)", start:"20:40", end:"22:40", icon:"send", days:REST_DAYS},
-  {id:"m2", text:"Meal", start:"22:40", end:"23:10", icon:"meal"},
-  {id:"r1", text:"Free time", start:"23:10", end:"23:30", icon:"break"},
-  {id:"z1", text:"Wind down · then sleep 7 hours", start:"23:45", end:"23:59", icon:"moon"}
+  {id:"w0", text:"Wake up · water · plan the day", start:"23:00", end:"23:15", icon:"sun"},
+  {id:"p1", text:"Project block 1 — today's Must, hardest part first, phone away", start:"23:45", end:"02:15", icon:"work"},
+  {id:"b1", text:"Break (small snack only if needed)", start:"02:15", end:"02:30", icon:"break"},
+  {id:"p2", text:"Project block 2 — continue the Must, send work to Claude for review", start:"02:30", end:"05:00", icon:"work"},
+  {id:"b2", text:"Break", start:"05:00", end:"05:15", icon:"break"},
+  {id:"c1", text:"Coding 1 — basics / OOP book: concept + examples (1 h)", start:"05:15", end:"06:15", icon:"code"},
+  {id:"r0", text:"Get ready for the gym", start:"06:15", end:"06:30", icon:"break"},
+  {id:"g1", text:"Gym", start:"06:30", end:"07:50", icon:"gym", days:GYM_DAYS},
+  {id:"o0", text:"No gym today — outreach and applications", start:"06:30", end:"07:50", icon:"send", days:REST_DAYS},
+  {id:"m1", text:"Breakfast", start:"07:50", end:"08:30", icon:"meal"},
+  {id:"c2", text:"Coding 2 — practice + timed test, send for marking (2 h)", start:"08:30", end:"10:30", icon:"code"},
+  {id:"b3", text:"Break", start:"10:30", end:"10:45", icon:"break"},
+  {id:"l1", text:"ML 1 — today's concept: learn it", start:"10:45", end:"12:15", icon:"brain"},
+  {id:"b4", text:"Break", start:"12:15", end:"12:25", icon:"break"},
+  {id:"l2", text:"ML 2 — closed-book test, then revise an old concept", start:"12:25", end:"13:55", icon:"brain"},
+  {id:"b5", text:"Break", start:"13:55", end:"14:10", icon:"break"},
+  {id:"o1", text:"Outreach + applications — messages, emails, applications (tracker open)", start:"14:10", end:"15:40", icon:"send"},
+  {id:"z1", text:"Wind down · sleep 16:00 → 23:00", start:"15:55", end:"16:00", icon:"moon"}
 ];
+const BASE_WAKE=23*60;
+function dayMin(t){ const m=toMin(t); return m<17*60 ? m+1440 : m; } // clock time → minutes from the start of the day's date
+function normWake(w){ return w<17*60 ? w+1440 : w; }
 // after the project is finished, the two project blocks become outreach blocks
 const OUTREACH_TEXT={p1:"Outreach block 1 — direct messages + emails to founders, CTOs, hiring managers (tracker open)", p2:"Outreach block 2 — applications + freelance proposals + follow-ups (target: 100 actions today)"};
 const PROJECT_TEXT={p1:"Project block 1 — today's Must, hardest part first, phone away", p2:"Project block 2 — continue the Must, send work to Claude for review"};
-function anchorOn(a,k){ if(!a.days||!a.days.length) return true; const sm=toMin(a.start)+(getWake(k)-420);
+function anchorOn(a,k){ if(!a.days||!a.days.length) return true; const sm=dayMin(a.start)+(normWake(getWake(k))-BASE_WAKE);
   const d=keyToDate(k); d.setDate(d.getDate()+Math.floor(sm/1440)); return a.days.includes(d.getDay()); }
 function anchorsOn(k){ return (S.anchors||[]).filter(a=>anchorOn(a,k)); }
-const ROUTINE_VERSION = 7;
+const ROUTINE_VERSION = 8;
 // one-time update (v4): fixed timetable + the 2-week Clinic Scribe sprint. Older plans are paused, not deleted.
 function migrate(){
   const v=S.routineV||1; if(v >= ROUTINE_VERSION) return;
@@ -942,6 +947,9 @@ function migrate(){
   if(v < 7){ S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a,days:a.days?[...a.days]:undefined}));
     if(!S.plans.find(p=>p.name===SPRINT4_NAME)){ S.plans.forEach(p=>{ p.active=false; }); createPlan(SPRINT4_NAME, SPRINT4_START, SPRINT4_TEMPLATE); }
     S.alerts=(S.alerts||[]).filter(a=>{ const t=S.tasks[a.taskId]; return t && (!t.planId || (planOf(t)||{}).active!==false); }); }
+  // v8: real clock times for the night day (wake 23:00, gym 06:30, sleep 16:00); old wake settings cleared
+  if(v < 8){ S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a,days:a.days?[...a.days]:undefined}));
+    Object.values(S.days||{}).forEach(d=>{ delete d.wake; delete d.late; }); S.settings.mode="project"; }
   S.routineV=ROUTINE_VERSION; saveLocal();
 }
 
@@ -960,11 +968,11 @@ function freshState(){ return {settings:{deepTarget:7, autoCarry:true}, habits:D
 function calKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function todayKey(d){ if(d) return calKey(d); const n=new Date(), k=calKey(n);
   try{ const y=new Date(n); y.setDate(y.getDate()-1); const yk=calKey(y); const yd=S&&S.days&&S.days[yk];
-    const w=getWake(yk); if(w!==420){ const end=1439+(w-420); if(n.getHours()*60+n.getMinutes()+1440 < end) return yk; } }catch(e){}
+    const end=2400+(normWake(getWake(yk))-BASE_WAKE); if(n.getHours()*60+n.getMinutes()+1440 < end) return yk; }catch(e){}
   return k; }
 // minutes since the start of the (possibly late-running) current day
 // wake time of a day: set on that day, otherwise carried from the day before (so a night schedule stays until you change it)
-function getWake(k, depth){ depth=depth||0; const d=S&&S.days&&S.days[k]; if(d && d.wake!=null) return d.wake; if(depth>=14) return 420; return getWake(addDays(k,-1), depth+1); }
+function getWake(k, depth){ depth=depth||0; const d=S&&S.days&&S.days[k]; if(d && d.wake!=null) return d.wake; if(depth>=14) return BASE_WAKE; return getWake(addDays(k,-1), depth+1); }
 function effNow(){ const m=nowMin(); return calKey(new Date())!==todayKey() ? m+1440 : m; }
 function dm(x){ return fromMin(((Math.round(x)%1440)+1440)%1440); }
 function keyToDate(k){ const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d); }
@@ -1293,7 +1301,7 @@ function renderWeek(){
   S.habits.forEach(h=>{ const tr=mk("tr"); tr.appendChild(mk("td","",h.text));
     keys.forEach(k=>{ const td=mk("td"); const on=S.days[k]&&S.days[k].habits&&S.days[k].habits[h.id];
       const s=mk("span","dot"+(!isLogged(k)?"":on?" y":" n")); td.appendChild(s); tr.appendChild(td); }); tb.appendChild(tr); });
-  (S.anchors||[]).slice().sort((a,b)=>toMin(a.start)-toMin(b.start)).forEach(a=>{ const tr=mk("tr"); tr.appendChild(mk("td","",(ANCHOR_ICON[a.icon]||"•")+" "+a.text));
+  (S.anchors||[]).slice().sort((a,b)=>dayMin(a.start)-dayMin(b.start)).forEach(a=>{ const tr=mk("tr"); tr.appendChild(mk("td","",(ANCHOR_ICON[a.icon]||"•")+" "+a.text));
     keys.forEach(k=>{ const td=mk("td"); const on=S.days[k]&&S.days[k].blocks&&S.days[k].blocks[a.id];
       td.appendChild(mk("span","dot"+(!isLogged(k)?"":on?" y":" n"))); tr.appendChild(td); }); tb.appendChild(tr); });
 
@@ -1423,15 +1431,15 @@ function lateShift(k, startMin){ const d=S.days[k]; if(!d||!d.late) return 0; re
 ------------------------------------------------------------------ */
 // Late wake-up: the WHOLE day moves by (wake − 07:00). Nothing is shortened or skipped;
 // the day simply runs later into the night, and sleep starts that much later too.
-function applyWake(items, wake){ const sh=wake-420; items.forEach(it=>{ it.s+=sh; it.e+=sh; }); return items; }
+function applyWake(items, wake){ const sh=normWake(wake)-BASE_WAKE; items.forEach(it=>{ it.s+=sh; it.e+=sh; }); return items; }
 function scheduleFor(k, withSkipped){
   const items=[];
   tasksOn(k).forEach(t=>{ if(t.start) items.push({kind:"task", id:t.id, text:t.text, start:t.start, end:t.end, done:t.done, ref:t}); });
   const dd=S.days[k]||{};
   S.habits.forEach(h=>{ if(h.start) items.push({kind:"habit", id:h.id, text:h.text, start:h.start, end:h.end||h.start, done:!!(dd.habits&&dd.habits[h.id]), ref:h}); });
   anchorsOn(k).forEach(a=>items.push({kind:"anchor", id:a.id, text:a.text, start:a.start, end:a.end, icon:a.icon, done:!!(dd.blocks&&dd.blocks[a.id])}));
-  items.forEach(it=>{ it.s=toMin(it.start); it.e=toMin(it.end); if(it.e<=it.s) it.e=it.s+15; });
-  const wk=getWake(k); if(wk!==420) applyWake(items, wk);
+  items.forEach(it=>{ it.s=dayMin(it.start); it.e=dayMin(it.end); if(it.e<=it.s) it.e=it.s+15; });
+  const wk=getWake(k); if(normWake(wk)!==BASE_WAKE) applyWake(items, wk);
   items.forEach(it=>{ if(it.skipped) return; const sh=lateShift(k,it.s); it.s+=sh; it.e+=sh; });
   const out=withSkipped?items:items.filter(it=>!it.skipped);
   return out.sort((a,b)=>(a.skipped-b.skipped) || a.s-b.s || (a.kind==="anchor")-(b.kind==="anchor"));
@@ -1549,28 +1557,28 @@ function renderNowCard(){
   [15,30,60].forEach(mn=>{ const bt=mk("button","btn ghost small",`+${mn} min`); bt.onclick=()=>{ const d=day(); const from=(cur?cur.s:now);
       d.late = d.late && d.late.from<=from ? {from:d.late.from, by:d.late.by+mn} : {from, by:(d.late?d.late.by:0)+mn}; save(); renderAll(); }; late.appendChild(bt); });
   const dd0=S.days[current]||{}; const W=getWake(current);
-  const askWake=(txt)=>{ const r5=Math.round(nowMin()/5)*5; const v=prompt(txt, fromMin(W!==420?W:r5));
+  const askWake=(txt)=>{ const r5=Math.round(nowMin()/5)*5; const v=prompt(txt, fromMin(W!==BASE_WAKE?W:r5));
       if(v===null) return; const mm=v.trim().match(/^(\d{1,2}):(\d{2})$/); if(!mm){ alert("Use the format 14:00"); return; }
       const d=day(); d.wake=Number(mm[1])*60+Number(mm[2]); delete d.late; save(); renderAll(); };
-  if(W===420){ const anyTick=Object.values(dd0.blocks||{}).some(Boolean)||Object.values(dd0.habits||{}).some(Boolean);
-    const wb=mk("button", (now>7*60+45 && now<1440 && !anyTick)?"btn small":"btn ghost small","Woke up late?");
-    wb.onclick=()=>askWake("What time did you wake up? (like 14:00)\nYour whole day moves later by the same amount: every block keeps its full length and the day runs on into the night. The next days keep this time until you change it.");
+  if(W===BASE_WAKE){ const anyTick=Object.values(dd0.blocks||{}).some(Boolean)||Object.values(dd0.habits||{}).some(Boolean);
+    const wb=mk("button", (now>BASE_WAKE+45 && !anyTick)?"btn small":"btn ghost small","Woke up at another time?");
+    wb.onclick=()=>askWake("What time did you wake up? (like 00:30)\nYour whole day moves by the same amount: every block keeps its full length. The next days keep this time until you change it.");
     late.appendChild(wb); }
-  else { const cb=mk("button","btn ghost small",`Wake ${dm(W)} · change`); cb.onclick=()=>askWake("What time did you wake up today? (like 13:00)");
-    const rb=mk("button","btn ghost small","Back to 07:00 day"); rb.onclick=()=>{ day().wake=420; save(); renderAll(); };
+  else { const cb=mk("button","btn ghost small",`Wake ${dm(W)} · change`); cb.onclick=()=>askWake("What time did you wake up today? (like 00:30)");
+    const rb=mk("button","btn ghost small","Back to 23:00 day"); rb.onclick=()=>{ day().wake=BASE_WAKE; save(); renderAll(); };
     late.append(cb, rb); }
   const dlate=S.days[current]&&S.days[current].late;
   if(dlate && dlate.by){ const r=mk("button","btn ghost small","Reset times"); r.onclick=()=>{ delete day().late; save(); renderAll(); }; late.appendChild(r); }
   card.appendChild(late);
-  if(W!==420){ const sh=W-420;
-    card.appendChild(mk("p","hint",`Day starts at ${dm(W)}: whole day moved ${Math.floor(sh/60)}h${sh%60?" "+(sh%60)+"m":""} later, nothing skipped. Today ends at ${dm(1439+sh)}${1439+sh>=1440?" (after midnight)":""}; sleep after that for 7 hours.`));
+  if(W!==BASE_WAKE){ const sh=normWake(W)-BASE_WAKE;
+    card.appendChild(mk("p","hint",`Day starts at ${dm(W)}: whole day moved ${sh<0?"earlier":"later"} by ${Math.floor(Math.abs(sh)/60)}h${Math.abs(sh)%60?" "+(Math.abs(sh)%60)+"m":""}, nothing skipped. Today ends at ${dm(2400+sh)}; sleep after that for 7 hours.`));
   }
   box.appendChild(card);
 }
 
 function renderAnchorEditor(){
   const ed=document.getElementById("anchorEditor"); if(!ed) return; ed.innerHTML="";
-  (S.anchors||[]).slice().sort((a,b)=>toMin(a.start)-toMin(b.start)).forEach(a=>{ const row=mk("div","editrow");
+  (S.anchors||[]).slice().sort((a,b)=>dayMin(a.start)-dayMin(b.start)).forEach(a=>{ const row=mk("div","editrow");
     const s1=document.createElement("input"); s1.type="time"; s1.value=a.start; s1.onchange=()=>{ a.start=s1.value||a.start; save(); renderAll(); };
     const s2=document.createElement("input"); s2.type="time"; s2.value=a.end; s2.onchange=()=>{ a.end=s2.value||a.end; save(); renderAll(); };
     const tx=document.createElement("input"); tx.type="text"; tx.value=a.text; tx.onchange=()=>{ if(tx.value.trim()){ a.text=tx.value.trim(); save(); renderAll(); } };
