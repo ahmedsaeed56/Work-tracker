@@ -73,6 +73,12 @@ nav.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
 .ring .val{font-size:.78rem;color:var(--muted)}
 .ring .center{font-weight:700;font-size:14px}
 
+.rev{border:1px solid var(--blk);background:color-mix(in srgb, var(--blk) 10%, var(--surface));border-radius:16px;padding:12px 14px;margin:12px 0}
+.rev h3{margin:0 0 4px;font-size:1rem;color:var(--blk)}
+.rev ul{list-style:none;margin:8px 0 0;padding:0}.rev li{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}
+.rev li .rt{flex:1 1 220px}.rev li .rt b{display:block}.rev li .rt small{color:var(--muted)}
+.btn.ok{background:var(--done);border-color:var(--done);color:#fff}.btn.no{background:transparent;border-color:var(--miss);color:var(--miss)}
+.dueb{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:999px;background:var(--blk);color:#fff;font-size:.72rem;line-height:18px;text-align:center}
 .alert{border:1px solid var(--carry);background:color-mix(in srgb, var(--carry) 10%, var(--surface));border-radius:16px;padding:12px 14px;margin:12px 0}
 .alert.miss{border-color:var(--miss);background:color-mix(in srgb, var(--miss) 9%, var(--surface))}
 .alert h3{margin:0 0 6px;font-size:1rem;display:flex;align-items:center;gap:8px}
@@ -203,6 +209,7 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
   </div>
   <nav class="tabs" role="tablist">
     <button role="tab" data-tab="today" aria-selected="true">Today</button>
+    <button role="tab" data-tab="revise" aria-selected="false">Revise<span class="dueb" id="dueBadge" hidden></span></button>
     <button role="tab" data-tab="plans" aria-selected="false">Plans</button>
     <button role="tab" data-tab="week" aria-selected="false">This week</button>
     <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
@@ -219,6 +226,7 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
     <div><h1 id="heroLine">Plan your day.</h1><p id="heroSub"></p></div>
   </div>
   <div id="alerts"></div>
+  <div id="reviseCard"></div>
   <div id="nowCard"></div>
   <div class="rings" id="rings"></div>
   <div id="planCard"></div>
@@ -246,6 +254,7 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
           <div class="field"><label for="deepHours">Focused hours today</label><input id="deepHours" type="number" inputmode="decimal" step="0.25" min="0" max="16"></div>
           <div class="field"><label for="concept">Concept of the day</label><input id="concept" placeholder="e.g. hybrid retrieval"></div>
         </div>
+        <button class="btn ghost small" id="conceptToRevise" style="margin-top:8px">Add today's concept to revision</button>
       </section>
       <section class="block">
         <h2 data-icon="brain">Closed-book test</h2>
@@ -259,6 +268,25 @@ ul.sched li.done .t{color:var(--muted);text-decoration:line-through}
       </section>
     </div>
   </div>
+</div>
+
+<!-- ============================ REVISE ============================ -->
+<div id="tab-revise" hidden>
+  <div class="hero" style="grid-template-columns:1fr"><div><h1>Revision</h1><p class="hint">Everything you learn comes back on day 1, 3, 7, 21 and 60. Recall it <b>closed-book first</b> (write it or say it out loud), then check your notes. Recalled → it comes back later. Forgot → it comes back tomorrow. After the day-60 recall it counts as mastered.</p></div></div>
+  <div id="reviseDueTab"></div>
+  <section class="block">
+    <h2 data-icon="plus">Add something you learned</h2>
+    <div class="grid2" style="max-width:640px">
+      <div class="field"><label for="rvTopic">Topic</label><input id="rvTopic" placeholder="e.g. Precision@K, Recall@K, MRR, nDCG"></div>
+      <div class="field"><label for="rvDate">Learned on</label><input id="rvDate" type="date"></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label for="rvNote">What you must be able to recall (your test question)</label><textarea id="rvNote" placeholder="e.g. Compute all four by hand for retrieved c02,c01,c09 · relevant c01,c04"></textarea></div>
+    <div class="row" style="margin-top:10px"><button class="btn" id="rvAdd">Add to revision</button>
+      <button class="btn ghost" id="rvNotify">Turn on revision notifications</button></div>
+    <p class="hint" id="rvNotifyNote"></p>
+  </section>
+  <section class="block"><h2 data-icon="clock">Coming up</h2><div id="reviseUpcoming"></div></section>
+  <section class="block"><h2 data-icon="tasks">Mastered</h2><div id="reviseMastered"></div></section>
 </div>
 
 <!-- ============================ PLANS ============================ -->
@@ -888,43 +916,45 @@ const SPRINT4_TEMPLATE = `## Day 1 · sound → measured transcript | Clinic Scr
 - Must: Fix the doctor's feedback, then switch to outreach mode in Settings`;
 
 const DEFAULT_HABITS = [
-  {id:"hp", text:"Posts: schedule today's learning post and Day N post in LinkedIn (30 min cap)", slot:"morning", start:"23:15", end:"23:45"},
-  {id:"hs", text:"Shutdown: tick today, write tomorrow's first task, update the outreach tracker", slot:"evening", start:"15:40", end:"15:55"}
+  {id:"hp1", text:"Post 1 — learning post: finish + schedule for the morning (5–10 min, no more)", slot:"morning", start:"05:00", end:"05:10"},
+  {id:"hp2", text:"Post 2 — Day N project post: finish + schedule for 18:00 (5–10 min, no more)", slot:"morning", start:"10:30", end:"10:40"},
+  {id:"hs", text:"Shutdown: 3 lines in DECISIONS.md (what, why, what I rejected) · add today's concept to Revise · write tomorrow's 3 targets", slot:"evening", start:"15:10", end:"15:30"}
 ];
 // Night day: wake 23:00, sleep 16:00. Times are real clock times; anything from 00:00 to 16:59 is after midnight.
 // If you wake at another time, set it on Today and every block moves with it.
 // days = calendar weekdays the block falls on (0 Sun … 6 Sat); no days = every day
+// Totals: project 5 h · coding 3 h · ML 1.5 h · job hunt 2 h · revision 30 min · two posts 10 min each
 const GYM_DAYS=[1,2,4,5,6], REST_DAYS=[0,3];
 const DEFAULT_ANCHORS = [
-  {id:"w0", text:"Wake up · water · plan the day", start:"23:00", end:"23:15", icon:"sun"},
-  {id:"p1", text:"Project block 1 — today's Must, hardest part first, phone away", start:"23:45", end:"02:15", icon:"work"},
-  {id:"b1", text:"Break (small snack only if needed)", start:"02:15", end:"02:30", icon:"break"},
-  {id:"p2", text:"Project block 2 — continue the Must, send work to Claude for review", start:"02:30", end:"05:00", icon:"work"},
-  {id:"b2", text:"Break", start:"05:00", end:"05:15", icon:"break"},
-  {id:"c1", text:"Coding 1 — basics / OOP book: concept + examples (1 h)", start:"05:15", end:"06:15", icon:"code"},
+  {id:"w0", text:"Wake up · water · light food", start:"23:00", end:"23:15", icon:"sun"},
+  {id:"rv", text:"🔁 Revision — open the Revise tab, recall every due topic closed-book first, then check", start:"23:15", end:"23:45", icon:"brain"},
+  {id:"p1", text:"Project block 1 — Clinic Scribe: today's Must, you write the code, hardest part first, phone away", start:"23:45", end:"02:45", icon:"work"},
+  {id:"b1", text:"Break", start:"02:45", end:"03:00", icon:"break"},
+  {id:"c1", text:"Coding 1 — basics → OOP: concept + examples, then a 30-min timed problem", start:"03:00", end:"05:00", icon:"code"},
+  {id:"l1", text:"ML — ONE concept: learn 40 min, then 20-min closed-book test", start:"05:10", end:"06:15", icon:"brain"},
   {id:"r0", text:"Get ready for the gym", start:"06:15", end:"06:30", icon:"break"},
   {id:"g1", text:"Gym", start:"06:30", end:"07:50", icon:"gym", days:GYM_DAYS},
-  {id:"o0", text:"No gym today — outreach and applications", start:"06:30", end:"07:50", icon:"send", days:REST_DAYS},
+  {id:"cu", text:"Catch-up slot — finish anything missed (never more than 1–2 days late)", start:"06:30", end:"07:50", icon:"work", days:[3]},
+  {id:"wt", text:"Weekly closed-book test — everything learned this week; failures go back into Revise", start:"06:30", end:"07:50", icon:"brain", days:[0]},
   {id:"m1", text:"Breakfast", start:"07:50", end:"08:30", icon:"meal"},
-  {id:"c2", text:"Coding 2 — practice + timed test, send for marking (2 h)", start:"08:30", end:"10:30", icon:"code"},
-  {id:"b3", text:"Break", start:"10:30", end:"10:45", icon:"break"},
-  {id:"l1", text:"ML 1 — today's concept: learn it", start:"10:45", end:"12:15", icon:"brain"},
-  {id:"b4", text:"Break", start:"12:15", end:"12:25", icon:"break"},
-  {id:"l2", text:"ML 2 — closed-book test, then revise an old concept", start:"12:25", end:"13:55", icon:"brain"},
-  {id:"b5", text:"Break", start:"13:55", end:"14:10", icon:"break"},
-  {id:"o1", text:"Outreach + applications — messages, emails, applications (tracker open)", start:"14:10", end:"15:40", icon:"send"},
-  {id:"z1", text:"Wind down · sleep 16:00 → 23:00", start:"15:55", end:"16:00", icon:"moon"}
+  {id:"p2", text:"Project block 2 — Clinic Scribe: continue the Must, then send your work to Claude for review", start:"08:30", end:"10:30", icon:"work"},
+  {id:"o1", text:"Job hunt — 15 tailored applications + 10 direct messages + freelance proposals (tracker open)", start:"10:40", end:"12:40", icon:"send"},
+  {id:"m2", text:"Lunch + rest", start:"12:40", end:"13:40", icon:"meal"},
+  {id:"c2", text:"Coding 2 — timed practice problems, send for marking", start:"13:40", end:"14:40", icon:"code"},
+  {id:"l2", text:"ML recall — explain today's concept from memory, no notes", start:"14:40", end:"15:10", icon:"brain"},
+  {id:"z1", text:"Wind down · sleep 16:00 → 23:00", start:"15:30", end:"16:00", icon:"moon"}
 ];
 const BASE_WAKE=23*60;
 function dayMin(t){ const m=toMin(t); return m<17*60 ? m+1440 : m; } // clock time → minutes from the start of the day's date
 function normWake(w){ return w<17*60 ? w+1440 : w; }
 // after the project is finished, the two project blocks become outreach blocks
-const OUTREACH_TEXT={p1:"Outreach block 1 — direct messages + emails to founders, CTOs, hiring managers (tracker open)", p2:"Outreach block 2 — applications + freelance proposals + follow-ups (target: 100 actions today)"};
-const PROJECT_TEXT={p1:"Project block 1 — today's Must, hardest part first, phone away", p2:"Project block 2 — continue the Must, send work to Claude for review"};
+const OUTREACH_TEXT={p1:"Course / client block — one Agentic Ops project a week, or paid client work", p2:"Outreach block 2 — direct messages to founders, CTOs, hiring managers + follow-ups"};
+const PROJECT_TEXT={p1:"Project block 1 — Clinic Scribe: today's Must, you write the code, hardest part first, phone away", p2:"Project block 2 — Clinic Scribe: continue the Must, then send your work to Claude for review"};
 function anchorOn(a,k){ if(!a.days||!a.days.length) return true; const sm=dayMin(a.start)+(normWake(getWake(k))-BASE_WAKE);
   const d=keyToDate(k); d.setDate(d.getDate()+Math.floor(sm/1440)); return a.days.includes(d.getDay()); }
 function anchorsOn(k){ return (S.anchors||[]).filter(a=>anchorOn(a,k)); }
-const ROUTINE_VERSION = 8;
+const ROUTINE_VERSION = 9;
+const FINISH_START = "2026-11-06"; // the night that starts at 23:00 on 6 Nov (most of it falls on 7 Nov)
 // one-time update (v4): fixed timetable + the 2-week Clinic Scribe sprint. Older plans are paused, not deleted.
 function migrate(){
   const v=S.routineV||1; if(v >= ROUTINE_VERSION) return;
@@ -950,6 +980,19 @@ function migrate(){
   // v8: real clock times for the night day (wake 23:00, gym 06:30, sleep 16:00); old wake settings cleared
   if(v < 8){ S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a,days:a.days?[...a.days]:undefined}));
     Object.values(S.days||{}).forEach(d=>{ delete d.wake; delete d.late; }); S.settings.mode="project"; }
+  // v9: new timetable (two 10-min posts, revision block, catch-up + weekly test), Revise tab,
+  //     and Clinic Scribe's unfinished days restart one after another from 6 Nov 23:00
+  if(v < 9){ S.habits=DEFAULT_HABITS.map(h=>({...h})); S.anchors=DEFAULT_ANCHORS.map(a=>({...a,days:a.days?[...a.days]:undefined}));
+    Object.values(S.days||{}).forEach(d=>{ delete d.wake; delete d.late; }); S.settings.mode="project";
+    let plan=S.plans.find(p=>p.name===SPRINT4_NAME);
+    if(!plan){ S.plans.forEach(p=>{ p.active=false; }); plan=createPlan(SPRINT4_NAME, FINISH_START, SPRINT4_TEMPLATE); }
+    else { S.plans.forEach(p=>{ p.active = p===plan; });
+      const open=planTasks(plan.id).filter(t=>!t.done && !t.dropped);
+      const ns=[...new Set(open.map(t=>t.n))].sort((a,b)=>a-b);
+      ns.forEach((n,i)=>{ const date=addDays(FINISH_START,i); open.filter(t=>t.n===n).forEach(t=>{ t.date=date; t.carried=0; }); });
+      if(ns.length) plan.start=addDays(FINISH_START, -(ns[0]-1)); }
+    S.alerts=[];
+    if(!S.reviews || !S.reviews.length) S.reviews=SEED_REVIEWS.map(r=>({id:uid(), topic:r[0], note:r[1], learned:FINISH_START, step:0, due:FINISH_START, history:[], mastered:false})); }
   S.routineV=ROUTINE_VERSION; saveLocal();
 }
 
@@ -964,7 +1007,7 @@ let openPlanDay = null;       // {planId, n} expanded in Plans tab
 
 function freshState(){ return {settings:{deepTarget:7, autoCarry:true}, habits:DEFAULT_HABITS.map(h=>({...h})),
   anchors:DEFAULT_ANCHORS.map(a=>({...a})), timer:null,
-  plans:[], tasks:{}, days:{}, slipLog:[], alerts:[], lastRollover:null}; }
+  plans:[], tasks:{}, days:{}, slipLog:[], alerts:[], reviews:[], lastRollover:null}; }
 function calKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function todayKey(d){ if(d) return calKey(d); const n=new Date(), k=calKey(n);
   try{ const y=new Date(n); y.setDate(y.getDate()-1); const yk=calKey(y); const yd=S&&S.days&&S.days[yk];
@@ -1111,6 +1154,7 @@ function renderToday(){
   document.getElementById("heroSub").textContent=sub;
 
   renderAlerts(isToday);
+  renderReviseCard();
   renderNowCard();
 
   const R=[];
@@ -1624,6 +1668,64 @@ function renderSettings(){
   document.getElementById("storageNote").textContent="Everything is saved only on this device, in this browser — nothing goes online. Clearing the browser's site data deletes it, so tap Back up all data once a week and keep the file. To move your log between phone and laptop, back up on one and restore on the other. " + (last?`Last backup: ${last}.`:"No backup made yet.");
 }
 
+/* ------------------------------------------------------------------
+   REVISION (spaced recall: day 1, 3, 7, 21, 60)
+------------------------------------------------------------------ */
+const REVIEW_STEPS=[1,3,7,21,60];
+const SEED_REVIEWS=[
+  ["Clinic Scribe Day 1: audio → VAD → Whisper pipeline", "Explain each step, why VAD, why Whisper small (RTF, RAM) — closed-book, then draw it"],
+  ["Eval basics: dataset categories, rubric 0–3, gate (S1 blocks)", "Write the 4 categories, 5 rubric dimensions with minimums, and the release rule from memory"],
+  ["Retrieval metrics: P@K, Recall@K, MRR, nDCG", "Compute all four by hand: retrieved c02,c01,c09 · relevant c01,c04 · K=3"],
+  ["Traces and spans: what they are, how to read a waterfall", "Explain trace, span, attribute, status; find the slow step in a 7.4 s trace"]
+];
+function reviewsAll(){ return S.reviews||(S.reviews=[]); }
+function reviewsDue(k){ k=k||todayKey(); return reviewsAll().filter(r=>!r.mastered && r.due<=k).sort((a,b)=>a.due<b.due?-1:1); }
+function addReview(topic, note, learned){ topic=(topic||"").trim(); if(!topic) return null;
+  const r={id:uid(), topic, note:(note||"").trim(), learned:learned||todayKey(), step:0, due:addDays(learned||todayKey(),REVIEW_STEPS[0]), history:[], mastered:false};
+  reviewsAll().push(r); return r; }
+function answerReview(r, ok){ const k=todayKey(); r.history.push({date:k, ok});
+  if(ok){ r.step+=1; if(r.step>=REVIEW_STEPS.length){ r.mastered=true; r.due=null; } else r.due=addDays(k, REVIEW_STEPS[r.step]); }
+  else { r.step=0; r.due=addDays(k,1); } }
+function reviewRow(r, compact){ const li=mk("li"); const tt=mk("div","rt"); tt.appendChild(mk("b","",r.topic));
+  const late = r.due<todayKey() ? ` · due since ${fmtDay(r.due)}` : "";
+  tt.appendChild(mk("small","",`${r.note?r.note+" · ":""}recall ${r.step+1} of ${REVIEW_STEPS.length}${late}`));
+  const row=mk("div","row"); const y=mk("button","btn small ok","Recalled ✓"), n=mk("button","btn small no","Forgot ✗");
+  y.onclick=()=>{ answerReview(r,true); save(); renderAll(); renderRevise(); }; n.onclick=()=>{ answerReview(r,false); save(); renderAll(); renderRevise(); };
+  row.append(y,n); li.append(tt,row); return li; }
+function renderReviseCard(){ const box=document.getElementById("reviseCard"); if(!box) return; box.innerHTML="";
+  const due=reviewsDue(); updateDueBadge(due.length); if(current!==todayKey()) return;
+  const div=mk("div","rev"); const h=mk("h3", "", due.length?`🔁 ${plural(due.length,"revision")} due today — do these before new work`:"🔁 No revisions due today");
+  div.appendChild(h);
+  if(due.length){ div.appendChild(mk("div","hint","Recall closed-book first (write it or say it), then check your notes. Be honest: Forgot brings it back tomorrow."));
+    const ul=mk("ul"); due.forEach(r=>ul.appendChild(reviewRow(r))); div.appendChild(ul); }
+  else { const next=reviewsAll().filter(r=>!r.mastered).sort((a,b)=>a.due<b.due?-1:1)[0];
+    div.appendChild(mk("div","hint", next?`Next: “${next.topic}” on ${fmtDay(next.due)}. Learned something today? Add it in the Revise tab.`:"Learned something today? Add it in the Revise tab so it comes back.")); }
+  box.appendChild(div); }
+function renderRevise(){ const due=reviewsDue(); updateDueBadge(due.length);
+  const dbox=document.getElementById("reviseDueTab"); dbox.innerHTML="";
+  const div=mk("div","rev"); div.appendChild(mk("h3","", due.length?`Due now: ${due.length}`:"Nothing due right now"));
+  if(due.length){ const ul=mk("ul"); due.forEach(r=>ul.appendChild(reviewRow(r))); div.appendChild(ul); } dbox.appendChild(div);
+  const up=document.getElementById("reviseUpcoming"); up.innerHTML="";
+  const later=reviewsAll().filter(r=>!r.mastered && r.due>todayKey()).sort((a,b)=>a.due<b.due?-1:1);
+  if(!later.length) up.appendChild(mk("p","hint","Nothing scheduled yet."));
+  const ul=mk("ul","tasks"); later.forEach(r=>{ const li=mk("li"); li.style.gridTemplateColumns="1fr auto";
+    const tt=mk("div","tt"); tt.appendChild(mk("div","t",r.topic)); tt.appendChild(mk("div","hint",`${fmtDay(r.due)} · recall ${r.step+1} of ${REVIEW_STEPS.length}${r.note?" · "+r.note:""}`));
+    const del=mk("button","btn ghost small","Delete"); del.onclick=()=>{ if(confirm(`Remove “${r.topic}” from revision?`)){ S.reviews=reviewsAll().filter(x=>x!==r); save(); renderRevise(); renderAll(); } };
+    li.append(tt,del); ul.appendChild(li); }); up.appendChild(ul);
+  const ms=document.getElementById("reviseMastered"); ms.innerHTML="";
+  const done=reviewsAll().filter(r=>r.mastered);
+  ms.appendChild(done.length? mk("p","",done.map(r=>r.topic).join(" · ")) : mk("p","hint","Topics you recall correctly on day 60 land here."));
+  const nn=document.getElementById("rvNotifyNote"); if(nn) nn.textContent = !("Notification" in window) ? "This browser doesn't support notifications; the pink Revise badge and the card on Today will still remind you." :
+    Notification.permission==="granted" ? "Notifications are on: when you open the app and revisions are due, you get a reminder (once a day)." : "With notifications on, the app reminds you about due revisions when you open it. The app icon also shows a badge on phones that support it."; }
+function updateDueBadge(n){ const b=document.getElementById("dueBadge"); if(b){ b.hidden=!n; b.textContent=n; }
+  try{ if(navigator.setAppBadge){ n?navigator.setAppBadge(n):navigator.clearAppBadge(); } }catch(e){} }
+function notifyDue(){ try{ const n=reviewsDue().length; if(!n || !("Notification" in window) || Notification.permission!=="granted") return;
+  const k=todayKey(); if(localStorage.getItem("forgelog.notified")===k) return;
+  const show=()=>{ localStorage.setItem("forgelog.notified",k); };
+  const body=`${plural(n,"topic")} to recall today. Closed-book first, then check.`;
+  if(navigator.serviceWorker && navigator.serviceWorker.ready){ navigator.serviceWorker.ready.then(reg=>{ reg.showNotification("Mehnat Log · revision due",{body, icon:"icon-192.png", tag:"revise"}); show(); }).catch(()=>{}); }
+  else { new Notification("Mehnat Log · revision due",{body}); show(); } }catch(e){} }
+
 function renderHeader(){
   const ps=activePlans();
   document.getElementById("planLine").textContent = ps.length ? ps.map(p=>{ const pr=planProgress(p); return `${p.name} ${pr.total?Math.round(100*pr.done/pr.total):0}%`; }).join(" · ") : "No active plan";
@@ -1672,7 +1774,8 @@ function bind(){
 
   document.querySelectorAll("nav.tabs button").forEach(b=>b.onclick=()=>{
     document.querySelectorAll("nav.tabs button").forEach(x=>x.setAttribute("aria-selected",String(x===b)));
-    ["today","plans","week","progress","settings"].forEach(t=>document.getElementById("tab-"+t).hidden = t!==b.dataset.tab);
+    ["today","revise","plans","week","progress","settings"].forEach(t=>document.getElementById("tab-"+t).hidden = t!==b.dataset.tab);
+    if(b.dataset.tab==="revise") renderRevise();
     if(b.dataset.tab==="today") renderToday();
     if(b.dataset.tab==="plans") renderPlans();
     if(b.dataset.tab==="week") renderWeek();
@@ -1680,6 +1783,17 @@ function bind(){
     if(b.dataset.tab==="settings") renderSettings();
     window.scrollTo(0,0); });
 
+  document.getElementById("rvDate").value=todayKey();
+  document.getElementById("rvAdd").onclick=()=>{ const t=document.getElementById("rvTopic"); const r=addReview(t.value, document.getElementById("rvNote").value, document.getElementById("rvDate").value||todayKey());
+    if(!r){ t.focus(); return; } t.value=""; document.getElementById("rvNote").value=""; save(); renderRevise(); renderAll(); };
+  document.getElementById("rvTopic").addEventListener("keydown",e=>{ if(e.key==="Enter") document.getElementById("rvAdd").click(); });
+  document.getElementById("rvNotify").onclick=()=>{ if(!("Notification" in window)){ renderRevise(); return; }
+    Notification.requestPermission().then(()=>{ renderRevise(); notifyDue(); }); };
+  document.getElementById("conceptToRevise").onclick=()=>{ const c=(day().concept||"").trim(); const b=document.getElementById("conceptToRevise");
+    if(!c){ document.getElementById("concept").focus(); return; }
+    if(reviewsAll().some(r=>r.topic.toLowerCase()===c.toLowerCase() && !r.mastered)){ b.textContent="Already in revision ✓"; }
+    else { addReview(c,"",current); save(); renderAll(); b.textContent="Added — first recall tomorrow ✓"; }
+    setTimeout(()=>b.textContent="Add today's concept to revision",1800); };
   document.getElementById("pStart").value=todayKey();
   document.getElementById("loadScribe").onclick=()=>{ document.getElementById("pName").value=SPRINT3_NAME; document.getElementById("pStart").value=SPRINT3_START; document.getElementById("pText").value=SPRINT3_TEMPLATE; };
   document.getElementById("loadTemplate").onclick=()=>{ document.getElementById("pName").value="LegalSpy sprint"; document.getElementById("pText").value=SPRINT_TEMPLATE; };
@@ -1725,7 +1839,7 @@ function bind(){
     downloadFile(`mehnat-log-${todayKey()}.csv`, csv, "text/csv"); };
 
   // re-run rollover when the app comes back after midnight
-  document.addEventListener("visibilitychange",()=>{ if(!document.hidden && S.lastRollover!==todayKey()){ rollover(); current=todayKey(); renderAll(); } });
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden){ if(S.lastRollover!==todayKey()){ rollover(); current=todayKey(); renderAll(); } notifyDue(); } });
 }
 
 /* ------------------------------------------------------------------
@@ -1737,7 +1851,9 @@ migrate();
 current=todayKey();
 rollover();
 bind();
+if(!S.reviews) S.reviews=[];
 renderAll();
+notifyDue();
 setInterval(()=>{ if(!document.hidden && current===todayKey() && !document.getElementById("tab-today").hidden && !S.timer) renderToday(); }, 60000);
 try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
 if("serviceWorker" in navigator && location.protocol.startsWith("http")){
